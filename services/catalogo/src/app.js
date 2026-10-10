@@ -1,3 +1,8 @@
+import {corsOptions} from './utils/corsOptions.js';
+import {personal} from './utils/seguridad.js';
+import {consultarAuditoria} from './utils/operacion.js';
+import prisma from './config/prisma.js';
+import {auditoriaHttp} from './middlewares/auditoriaHttp.js';
 import express from "express";
 import cors from "cors";
 
@@ -9,8 +14,11 @@ import precioRoutes from "./routes/precioRoutes.js";
 
 const app = express();
 
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
+app.get('/admin/bitacora',personal(['ADMINISTRADOR']),consultarAuditoria(prisma));
+app.use(auditoriaHttp(prisma));
+
 
 app.use("/productos", productoRoutes);
 app.use("/presentaciones", presentacionRoutes);

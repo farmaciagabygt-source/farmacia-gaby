@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { useNavigate } from "react-router-dom";
 
+import { useCarrito } from "../../context/CarritoContext";
 import { useAuth } from "../../context/AuthContext";
 
 
@@ -124,6 +125,7 @@ const categorias = [
 
 
 const HeaderPublico = () => {
+    const { carrito } = useCarrito();
     const navigate = useNavigate();
     const { usuario, logout } = useAuth();
 
@@ -360,6 +362,7 @@ const HeaderPublico = () => {
                                 >
                                     Actualizar información
                                 </button>
+                                {usuario.roles?.includes('CLIENTE') && <button type="button" onClick={() => { setMostrarMenuUsuario(false); navigate('/mis-pedidos'); }} style={{ width: '100%', padding: 10, marginBottom: 8, border: 0, borderRadius: 8, backgroundColor: '#edf5ff', color: '#174a8b', fontWeight: 700, textAlign: 'left', cursor: 'pointer' }}>Mis pedidos</button>}
                                 <button
                                     type="button"
                                     onClick={() => {
@@ -410,13 +413,17 @@ const HeaderPublico = () => {
                             ...styles.action,
                             ...styles.cart,
                         }}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Ver carrito, ${carrito?.resumen?.cantidad_unidades || 0} unidades`}
+                        onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate("/carrito"); } }}
                         onClick={() => navigate("/carrito")}
                     >
                         <span style={styles.actionIcon}>🛒</span>
                         <span>Carrito</span>
 
                         <span style={styles.cartBadge}>
-                            0
+                            {carrito?.resumen?.cantidad_unidades || 0}
                         </span>
                     </div>
 

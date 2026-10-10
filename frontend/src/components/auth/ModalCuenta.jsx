@@ -1,3 +1,4 @@
+import {SERVICIOS} from '../../api/urls';
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -74,7 +75,7 @@ const ModalCuenta = ({ abierto, onCerrar }) => {
 
         try {
             const respuesta = await fetch(
-                "http://localhost:3001/api/auth/registro",
+                (SERVICIOS.auth + "/registro"),
                 {
                     method: "POST",
                     headers: {
@@ -107,7 +108,7 @@ const ModalCuenta = ({ abierto, onCerrar }) => {
 
         try {
             const respuesta = await fetch(
-                "http://localhost:3001/api/auth/login",
+                (SERVICIOS.auth + "/login"),
                 {
                     method: "POST",
                     headers: {
@@ -143,8 +144,8 @@ const ModalCuenta = ({ abierto, onCerrar }) => {
 
                 onCerrar();
 
-                if (data.usuario.roles?.includes("ADMINISTRADOR")) {
-                    navigate("/dashboard");
+                if (data.usuario.roles?.some(r=>["ADMINISTRADOR","CAJERO","INVENTARIO","DESPACHO"].includes(r))) {
+                    navigate("/");
                 }
             }, 2000);
 
@@ -166,7 +167,7 @@ const ModalCuenta = ({ abierto, onCerrar }) => {
 
         try {
             const respuesta = await fetch(
-                "http://localhost:3001/api/auth/recuperar-password",
+                (SERVICIOS.auth + "/recuperar-password"),
                 {
                     method: "POST",
                     headers: {
@@ -261,7 +262,7 @@ const ModalCuenta = ({ abierto, onCerrar }) => {
 
         try {
             const response = await fetch(
-                "http://localhost:3001/api/auth/restablecer-password",
+                (SERVICIOS.auth + "/restablecer-password"),
                 {
                     method: "POST",
                     headers: {

@@ -1,3 +1,4 @@
+import {auditar} from '../utils/operacion.js';
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
@@ -117,20 +118,19 @@ export const loginUsuario = async (data) => {
         },
     });
 
-    const esCliente =
-        roles.length === 1 &&
-        roles[0] === "CLIENTE";
+    const opcionesToken={expiresIn:process.env.JWT_EXPIRES_IN||'2h'};
 
-    const opcionesToken = esCliente
-        ? {}
-        : {
-            expiresIn:
-                process.env.JWT_EXPIRES_IN || "2h",
-        };
+    const cliente = await prisma.cliente.findUnique({
+        where: { id_usuario: usuario.id_usuario },
+        select: { id_cliente: true },
+    });
+
+    const idCliente = cliente?.id_cliente ?? null;
 
     const token = jwt.sign(
         {
             id_usuario: usuario.id_usuario,
+            id_cliente: idCliente,
             correo: usuario.correo,
             roles,
             version_seguridad: usuario.version_seguridad,
@@ -139,9 +139,11 @@ export const loginUsuario = async (data) => {
         opcionesToken
     );
 
+    await auditar(prisma,{actor:usuario.id_usuario,accion:'INICIAR_SESION',entidad:'Usuario',referencia:usuario.id_usuario,cambios:{}});
     return {
         usuario: {
             id_usuario: usuario.id_usuario,
+            id_cliente: idCliente,
             nombre_completo: usuario.nombre_completo,
             correo: usuario.correo,
             telefono: usuario.telefono,

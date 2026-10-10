@@ -1,0 +1,5 @@
+const fs=require('node:fs'),path=require('node:path'),{spawnSync}=require('node:child_process');
+const root=path.resolve(__dirname,'..');let errores=0;
+for(const s of ['auth','catalogo','inventario','pedidos','pagos']){const base=path.join(root,'services',s),d=fs.readFileSync(path.join(base,'Dockerfile'),'utf8'),rail=JSON.parse(fs.readFileSync(path.join(base,'railway.json')));if(/^ENV DATABASE_URL/m.test(d)||!d.includes('RUN DATABASE_URL=')||rail.deploy.healthcheckPath!=='/health'||!rail.deploy.preDeployCommand.includes('npm run deploy:prepare')){console.error('Configuración incorrecta: '+s);errores++;}for(const p of ['scripts/predeploy.mjs',...(s==='auth'?['scripts/bootstrap-admin.mjs']:[])]){const r=spawnSync(process.execPath,['--check',path.join(base,p)],{encoding:'utf8'});if(r.status){console.error(r.stderr);errores++;}}}
+const v=JSON.parse(fs.readFileSync(path.join(root,'frontend/vercel.json')));if(v.outputDirectory!=='dist'||v.rewrites[0].destination!=='/index.html')errores++;
+console.log(errores?'Errores de despliegue: '+errores:'Configuración de cinco servicios y Vercel verificada.');process.exitCode=errores?1:0;

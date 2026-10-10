@@ -1,0 +1,5 @@
+const base={pedidos:import.meta.env.VITE_PEDIDOS_URL||'http://localhost:3004',pagos:import.meta.env.VITE_PAGOS_URL||'http://localhost:3005',catalogo:import.meta.env.VITE_CATALOGO_URL||'http://localhost:3002',inventario:import.meta.env.VITE_INVENTARIO_URL||'http://localhost:3003',auth:import.meta.env.VITE_AUTH_URL||'http://localhost:3001/api/auth'};
+export async function adminApi(servicio,ruta,token,{method='GET',body,signal}={}){const r=await fetch(base[servicio].replace(/\/$/,'')+ruta,{method,headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined,signal:signal?AbortSignal.any([signal,AbortSignal.timeout(20000)]):AbortSignal.timeout(20000)});const d=await r.json().catch(()=>null);if(!r.ok)throw new Error(d?.message||`No se pudo consultar ${servicio} (${r.status}).`);return d;}
+export const textoEstado=s=>(s||'').replaceAll('_',' ').toLowerCase();
+export const dinero=(n,moneda='GTQ')=>new Intl.NumberFormat('es-GT',{style:'currency',currency:moneda}).format(Number(n||0));
+export const fecha=n=>n?new Date(n).toLocaleString('es-GT',{timeZone:'America/Guatemala'}):'—';

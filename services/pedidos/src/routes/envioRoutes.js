@@ -5,9 +5,13 @@ import {
     obtenerEnvioPorPedido,
 } from "../controllers/envioController.js";
 
+import { identificar, soloAdministrador } from '../middlewares/authMiddleware.js';
+import { verificarPropietarioPedidoAuxiliar } from '../middlewares/propietarioMiddleware.js';
 const router = express.Router();
+router.use(identificar);
 
-router.post("/", crearEnvio);
-router.get("/pedido/:id_pedido", obtenerEnvioPorPedido);
+
+router.post("/", soloAdministrador, crearEnvio);
+router.get("/pedido/:id_pedido", verificarPropietarioPedidoAuxiliar, obtenerEnvioPorPedido);
 
 export default router;

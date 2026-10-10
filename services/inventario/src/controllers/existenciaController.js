@@ -1,3 +1,4 @@
+const vendible=e=>e.ref_id_ubicacion.activa&&e.ref_id_ubicacion.ref_id_sucursal.estado==='ACTIVO'&&['BODEGA','VENTA'].includes(e.ref_id_ubicacion.tipo)&&e.ref_id_lote.estado==='DISPONIBLE'&&(!e.ref_id_lote.fecha_vencimiento||e.ref_id_lote.fecha_vencimiento>new Date());
 import prisma from "../config/prisma.js";
 
 // Consultar existencia disponible de una presentación en una sucursal
@@ -18,9 +19,11 @@ export const consultarExistencia = async (req, res) => {
                 ref_id_ubicacion: {
                     id_sucursal: Number(id_sucursal),
                     activa: true,
+                    tipo: {in:["BODEGA","VENTA"]},
                 },
                 ref_id_lote: {
                     estado: "DISPONIBLE",
+                    OR:[{fecha_vencimiento:null},{fecha_vencimiento:{gt:new Date()}}],
                 },
             },
             include: {
@@ -110,12 +113,14 @@ export const consultarDisponibilidadGeneral = async (req, res) => {
                 },
                 ref_id_ubicacion: {
                     activa: true,
+                    tipo: {in:["BODEGA","VENTA"]},
                     ref_id_sucursal: {
                         estado: "ACTIVO",
                     },
                 },
                 ref_id_lote: {
                     estado: "DISPONIBLE",
+                    OR:[{fecha_vencimiento:null},{fecha_vencimiento:{gt:new Date()}}],
                 },
             },
             select: {
@@ -206,11 +211,11 @@ export const listarResumenInventario = async (req, res) => {
             cantidad_reservada:
                 existencia.cantidad_reservada,
 
-            cantidad_disponible: Math.max(
+            cantidad_disponible: vendible(existencia) ? Math.max(
                 existencia.cantidad_fisica -
                 existencia.cantidad_reservada,
                 0
-            ),
+            ) : 0,
 
             minimo: existencia.minimo,
             maximo: existencia.maximo,

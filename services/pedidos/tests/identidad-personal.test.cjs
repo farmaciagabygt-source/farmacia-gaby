@@ -1,0 +1,11 @@
+const test=require('node:test'),assert=require('node:assert/strict');
+const respuesta=()=>({codigo:200,status(n){this.codigo=n;return this;},json(d){this.data=d;}});
+test('Identidad actual consultada en Auth',async t=>{const original=global.fetch,m=await import('../src/middlewares/authMiddleware.js');const ejecutar=async payload=>{global.fetch=async()=>new Response(JSON.stringify(payload),{status:200});const req={headers:{authorization:'Bearer token-sintetico'}},res=respuesta();let paso=false;await m.identificar(req,res,()=>paso=true);return {req,res,paso};};try{
+await t.test('Administrador con cliente conserva identidad de personal',async()=>{const r=await ejecutar({id_usuario:9,id_cliente:2,roles:['CLIENTE','ADMINISTRADOR']});assert.equal(r.paso,true);assert.equal(r.req.identidad.tipo,'PERSONAL');assert.equal(m.esAdministrador(r.req.identidad),true);});
+await t.test('Cliente usa id_cliente confirmado por Auth',async()=>{const r=await ejecutar({id_usuario:9,id_cliente:2,roles:['CLIENTE']});assert.equal(r.paso,true);assert.equal(r.req.identidad.id_cliente,2);assert.equal(m.esPersonalPedidos(r.req.identidad),false);});
+await t.test('Cliente sin perfil se rechaza',async()=>{const r=await ejecutar({id_usuario:9,roles:['CLIENTE']});assert.equal(r.paso,false);assert.equal(r.res.codigo,403);});
+await t.test('Caja consulta pedidos sin permisos administrativos',async()=>{const r=await ejecutar({id_usuario:9,roles:['CAJERO']});assert.equal(m.esPersonalPedidos(r.req.identidad),true);assert.equal(m.esAdministrador(r.req.identidad),false);});
+await t.test('Inventario no consulta pedidos',async()=>{const r=await ejecutar({id_usuario:9,roles:['INVENTARIO']});assert.equal(m.esPersonalPedidos(r.req.identidad),false);});
+await t.test('Sesión revocada en Auth impide acceso',async()=>{global.fetch=async()=>new Response(JSON.stringify({message:'Sesión revocada'}),{status:401});const req={headers:{authorization:'Bearer token-sintetico'}},res=respuesta();await m.identificar(req,res,()=>assert.fail());assert.equal(res.codigo,401);});
+await t.test('Auth caído no concede identidad',async()=>{global.fetch=async()=>{throw Error('offline');};const res=respuesta();await m.identificar({headers:{authorization:'Bearer token-sintetico'}},res,()=>assert.fail());assert.equal(res.codigo,503);});
+}finally{global.fetch=original;}});

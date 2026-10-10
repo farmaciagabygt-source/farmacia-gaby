@@ -15,7 +15,7 @@ const PreciosProducto = ({
         id_lista: "",
         importe: "",
         incluye_impuesto: true,
-        tasa_impuesto: "12",
+        tasa_impuesto: "0.12",
         id_sucursal: "",
         canal: "TODOS",
         desde: "",
@@ -639,7 +639,7 @@ const PreciosProducto = ({
                                                 styles.label
                                             }
                                         >
-                                            Tasa de impuesto
+                                            Tasa de impuesto (0.12 = 12 %)
                                         </label>
 
                                         <input
@@ -664,7 +664,7 @@ const PreciosProducto = ({
                                                         .value
                                                 )
                                             }
-                                            placeholder="12"
+                                            placeholder="0.12"
                                             style={
                                                 styles.input
                                             }

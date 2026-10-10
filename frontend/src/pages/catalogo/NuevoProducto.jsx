@@ -1,3 +1,4 @@
+import {SERVICIOS} from '../../api/urls';
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -15,7 +16,7 @@ import CategoriasProducto from "./components/CategoriasProducto";
 import PresentacionesProducto from "./components/PresentacionesProducto";
 import PreciosProducto from "./components/PreciosProducto";
 
-const API_CATALOGO = "http://localhost:3002";
+const API_CATALOGO = (SERVICIOS.catalogo);
 
 const estadoInicialProducto = {
     nombre: "",

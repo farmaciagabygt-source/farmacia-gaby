@@ -1,5 +1,9 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useCarrito } from "../../context/CarritoContext";
+import { carritoApi, productosParaVenta } from "../../api/carritoApi";
+import { destacadas } from '../../data/enfermedades';
+import '../../styles/cliente.css';
 import logo from "../../assets/FarmaciasGaby.png";
 import HeaderPublico from "../../components/public/HeaderPublico";
 
@@ -32,7 +36,7 @@ import {
     GiMushroomGills,
 } from "react-icons/gi";
 
-const categorias = [
+const iconosCategorias = [
     {
         nombre: "Analgésicos y Antipiréticos",
         icono: FaPills,
@@ -117,77 +121,101 @@ const categorias = [
     },
 ];
 
-const productosDestacados = [
-    {
-        id: 1,
-        nombre: "ACETAMINOFEN 500MG CAJA X 100 ARGUS",
-        categoria: "Analgésicos y Antipiréticos",
-        precio: 40.27,
-        stock: 158,
-        requiereReceta: false,
-    },
-    {
-        id: 2,
-        nombre: "ACEITE OMEGA 3 1000MG CAP CONAMEP X 50'S",
-        categoria: "Vitaminas y Suplementos",
-        precio: 36.91,
-        stock: 38,
-        requiereReceta: false,
-    },
-    {
-        id: 3,
-        nombre: "ALKA SELTZER X 60'S TABLETAS CAJA",
-        categoria: "Gastrointestinales",
-        precio: 26.85,
-        stock: 77,
-        requiereReceta: false,
-    },
-    {
-        id: 4,
-        nombre: "ANTIGRIPITO TABLETAS X 100'S",
-        categoria: "Respiratorios y Antigripales",
-        precio: 46.56,
-        stock: 164,
-        requiereReceta: false,
-    },
-];
-
-const enfermedadesComunes = [
-    {
-        id: 1,
-        nombre: "Dolor y fiebre",
-        descripcion: "Explora productos relacionados con dolor y fiebre.",
-    },
-    {
-        id: 2,
-        nombre: "Gripe y resfriado",
-        descripcion: "Consulta productos disponibles para gripe y resfriado.",
-    },
-    {
-        id: 3,
-        nombre: "Malestar gastrointestinal",
-        descripcion: "Encuentra productos de la categoría gastrointestinal.",
-    },
-    {
-        id: 4,
-        nombre: "Alergias",
-        descripcion: "Explora productos disponibles relacionados con alergias.",
-    },
-    {
-        id: 5,
-        nombre: "Cuidado de la piel",
-        descripcion: "Consulta productos dermatológicos y de cuidado de la piel.",
-    },
-    {
-        id: 6,
-        nombre: "Vitaminas y bienestar",
-        descripcion: "Encuentra vitaminas y suplementos disponibles.",
-    },
-];
+const enfermedadesComunes = destacadas;
 
 const Home = () => {
+    const {
+        agregar,
+        ocupado,
+        cargando,
+        sucursal,
+        existencias,
+        esPersonal,
+    } = useCarrito();
+
+    const [categoriasReales, setCategoriasReales] = useState([]);
+
+    useEffect(() => {
+        let alive = true;
+
+        carritoApi.categorias()
+            .then((data) => {
+                if (alive) {
+                    setCategoriasReales(
+                        data.filter((c) => c.activa !== false)
+                    );
+                }
+            })
+            .catch(() => { });
+
+        return () => {
+            alive = false;
+        };
+    }, []);
+
+    const categorias = categoriasReales.map((c) => ({
+        ...c,
+        icono:
+            iconosCategorias.find((i) => i.nombre === c.nombre)?.icono ||
+            MdCategory,
+    }));
+
+    const [catalogoReal, setCatalogoReal] = useState([]);
+    const [errorCatalogo, setErrorCatalogo] = useState("");
+
+    const [promociones, setPromociones] = useState([]);
+    const [errorPromociones, setErrorPromociones] = useState("");
+    const [cargandoPromociones, setCargandoPromociones] = useState(true);
+
+    useEffect(() => {
+        let activo = true;
+
+        carritoApi.promociones()
+            .then((data) => {
+                if (activo) setPromociones(data);
+            })
+            .catch((error) => {
+                if (activo) setErrorPromociones(error.message);
+            })
+            .finally(() => {
+                if (activo) setCargandoPromociones(false);
+            });
+
+        return () => {
+            activo = false;
+        };
+    }, []);
+    useEffect(() => {
+        let alive = true;
+
+        carritoApi.productos()
+            .then((data) => {
+                if (alive) {
+                    setCatalogoReal(data);
+                }
+            })
+            .catch(() => {
+                if (alive) {
+                    setErrorCatalogo(
+                        "No se pudieron cargar los productos destacados. Puedes intentar desde el catálogo."
+                    );
+                }
+            });
+
+        return () => {
+            alive = false;
+        };
+    }, []);
+    const productosDestacados = useMemo(() => {
+        const destacados = catalogoReal.filter(
+            (producto) => producto.destacado === true
+        );
+
+        return productosParaVenta(destacados, existencias, sucursal)
+            .filter((producto) => producto.precio !== null && producto.stock > 0)
+            .slice(0, 4);
+    }, [catalogoReal, existencias, sucursal]);
     const navigate = useNavigate();
-    const [mostrarCategorias, setMostrarCategorias] = useState(false);
 
     const styles = {
         page: {
@@ -545,7 +573,9 @@ const Home = () => {
                         }}
                     >
                         {categorias.map((categoria) => (
-                            <div
+                            <button
+                                type="button"
+                                onClick={() => navigate(`/productos?categoria=${encodeURIComponent(categoria.nombre)}`)}
                                 key={categoria.nombre}
                                 style={{
                                     minHeight: "135px",
@@ -586,7 +616,7 @@ const Home = () => {
                                 >
                                     {categoria.nombre}
                                 </span>
-                            </div>
+                            </button>
                         ))}
                     </div>
                 </section>
@@ -674,60 +704,156 @@ const Home = () => {
                         </button>
                     </div>
 
-                    {/* CONTENIDO TEMPORAL */}
-                    <div
-                        style={{
-                            minHeight: "210px",
-                            backgroundColor: "#ffffff",
-                            border: "1px solid #e5e7eb",
-                            borderRadius: "16px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            padding: "35px",
-                            boxSizing: "border-box",
-                            textAlign: "center",
-                        }}
-                    >
+                    {/* OFERTAS VIGENTES */}
+                    {cargandoPromociones ? (
+                        <p style={{ color: "#6b7280" }}>
+                            Cargando ofertas...
+                        </p>
+                    ) : errorPromociones ? (
+                        <p role="alert" style={{ color: "#c62828" }}>
+                            {errorPromociones}
+                        </p>
+                    ) : (
                         <div
                             style={{
-                                maxWidth: "520px",
+                                display: "grid",
+                                gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                                gap: "22px",
                             }}
                         >
-                            <div
-                                style={{
-                                    width: "55px",
-                                    height: "4px",
-                                    backgroundColor: "#00a651",
-                                    borderRadius: "10px",
-                                    margin: "0 auto 20px",
-                                }}
-                            />
+                            {promociones
+                                .filter((promocion) => {
+                                    const sucursales =
+                                        promocion.rel_promocion_sucursal_id_promocion || [];
 
-                            <h3
-                                style={{
-                                    margin: "0 0 10px 0",
-                                    color: "#174a8b",
-                                    fontSize: "20px",
-                                    fontWeight: "700",
-                                }}
-                            >
-                                Próximamente nuevas ofertas
-                            </h3>
+                                    return (
+                                        sucursales.length === 0 ||
+                                        sucursales.some(
+                                            (s) => Number(s.id_sucursal) === Number(sucursal)
+                                        )
+                                    );
+                                })
+                                .slice(0, 4)
+                                .map((promocion) => (
+                                    <article
+                                        key={promocion.id_promocion}
+                                        style={{
+                                            backgroundColor: "#ffffff",
+                                            border: "1px solid #e5e7eb",
+                                            borderRadius: "15px",
+                                            padding: "25px",
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            gap: "16px",
+                                            boxShadow: "0 5px 18px rgba(23, 74, 139, 0.06)",
+                                        }}
+                                    >
+                                        <span
+                                            style={{
+                                                alignSelf: "flex-start",
+                                                backgroundColor: "#eaf8f0",
+                                                color: "#008f49",
+                                                borderRadius: "20px",
+                                                padding: "8px 14px",
+                                                fontWeight: "800",
+                                                fontSize: "18px",
+                                            }}
+                                        >
+                                            {promocion.tipo === "PORCENTAJE"
+                                                ? `${Number(promocion.valor)}% de descuento`
+                                                : promocion.tipo === "MONTO"
+                                                    ? `Q${Number(promocion.valor).toFixed(2)} de descuento`
+                                                    : promocion.tipo === "PRECIO_FIJO"
+                                                        ? `Precio especial: Q${Number(promocion.valor).toFixed(2)}`
+                                                        : "Oferta en combo"}
+                                        </span>
 
-                            <p
-                                style={{
-                                    margin: 0,
-                                    color: "#6b7280",
-                                    fontSize: "14px",
-                                    lineHeight: "1.6",
-                                }}
-                            >
-                                Las promociones disponibles se mostrarán aquí cuando sean
-                                registradas en el catálogo de Farmacia Gaby.
-                            </p>
+                                        <h3
+                                            style={{
+                                                margin: 0,
+                                                color: "#174a8b",
+                                                fontSize: "18px",
+                                                lineHeight: "1.4",
+                                            }}
+                                        >
+                                            {promocion.nombre}
+                                        </h3>
+
+                                        <div style={{ flex: 1 }}>
+                                            {(
+                                                promocion.rel_promocion_producto_id_promocion || []
+                                            ).map((relacion) => {
+                                                const producto = catalogoReal.find(
+                                                    (p) =>
+                                                        Number(p.id_producto) ===
+                                                        Number(relacion.id_producto)
+                                                );
+
+                                                return producto ? (
+                                                    <p
+                                                        key={producto.id_producto}
+                                                        style={{
+                                                            margin: "0 0 8px",
+                                                            color: "#25364a",
+                                                            fontSize: "14px",
+                                                            lineHeight: "1.5",
+                                                        }}
+                                                    >
+                                                        {producto.nombre}
+                                                    </p>
+                                                ) : null;
+                                            })}
+                                        </div>
+
+                                        <p
+                                            style={{
+                                                margin: 0,
+                                                color: "#6b7280",
+                                                fontSize: "13px",
+                                            }}
+                                        >
+                                            Vigente hasta{" "}
+                                            {new Date(promocion.hasta).toLocaleDateString(
+                                                "es-GT",
+                                                { timeZone: "America/Guatemala" }
+                                            )}
+                                        </p>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => navigate("/productos")}
+                                            style={{
+                                                border: "none",
+                                                borderRadius: "8px",
+                                                padding: "12px",
+                                                backgroundColor: "#174a8b",
+                                                color: "#ffffff",
+                                                fontWeight: "700",
+                                                cursor: "pointer",
+                                            }}
+                                        >
+                                            Ver productos
+                                        </button>
+                                    </article>
+                                ))}
+
+                            {promociones.filter((promocion) => {
+                                const sucursales =
+                                    promocion.rel_promocion_sucursal_id_promocion || [];
+
+                                return (
+                                    sucursales.length === 0 ||
+                                    sucursales.some(
+                                        (s) => Number(s.id_sucursal) === Number(sucursal)
+                                    )
+                                );
+                            }).length === 0 && (
+                                    <p style={{ color: "#6b7280" }}>
+                                        No hay ofertas vigentes para esta sucursal.
+                                    </p>
+                                )}
                         </div>
-                    </div>
+                    )}
                 </div>
             </section>
 
@@ -819,6 +945,8 @@ const Home = () => {
                             gap: "22px",
                         }}
                     >
+                        {errorCatalogo && <p role="alert">{errorCatalogo}</p>}
+                        {!errorCatalogo && productosDestacados.length === 0 && <p>No hay productos destacados disponibles en esta sucursal. <a href="/productos">Explorar catálogo</a></p>}
                         {productosDestacados.map((producto) => (
                             <article
                                 key={producto.id}
@@ -931,6 +1059,8 @@ const Home = () => {
 
                                     <button
                                         type="button"
+                                        disabled={ocupado || cargando || esPersonal || !sucursal}
+                                        onClick={() => agregar(producto.idPresentacion)}
                                         style={{
                                             width: "100%",
                                             border: "none",
@@ -1018,80 +1148,14 @@ const Home = () => {
                     <div
                         style={{
                             display: "grid",
-                            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 270px), 1fr))",
                             gap: "20px",
                         }}
                     >
-                        {enfermedadesComunes.map((item) => (
-                            <div
-                                key={item.id}
-                                style={{
-                                    backgroundColor: "#ffffff",
-                                    border: "1px solid #e2e8f0",
-                                    borderRadius: "14px",
-                                    padding: "25px",
-                                    minHeight: "145px",
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    justifyContent: "space-between",
-                                    boxSizing: "border-box",
-                                    boxShadow: "0 5px 18px rgba(23, 74, 139, 0.05)",
-                                }}
-                            >
-                                <div>
-                                    <div
-                                        style={{
-                                            width: "42px",
-                                            height: "4px",
-                                            backgroundColor: "#00a651",
-                                            borderRadius: "10px",
-                                            marginBottom: "17px",
-                                        }}
-                                    />
-
-                                    <h3
-                                        style={{
-                                            margin: "0 0 8px 0",
-                                            color: "#174a8b",
-                                            fontSize: "17px",
-                                            fontWeight: "750",
-                                        }}
-                                    >
-                                        {item.nombre}
-                                    </h3>
-
-                                    <p
-                                        style={{
-                                            margin: 0,
-                                            color: "#6b7280",
-                                            fontSize: "13px",
-                                            lineHeight: "1.55",
-                                        }}
-                                    >
-                                        {item.descripcion}
-                                    </p>
-                                </div>
-
-                                <button
-                                    type="button"
-                                    style={{
-                                        marginTop: "20px",
-                                        padding: 0,
-                                        border: "none",
-                                        backgroundColor: "transparent",
-                                        color: "#00a651",
-                                        fontSize: "13px",
-                                        fontWeight: "700",
-                                        textAlign: "left",
-                                        cursor: "pointer",
-                                    }}
-                                >
-                                    Ver productos asociados →
-                                </button>
-                            </div>
-                        ))}
+                        {enfermedadesComunes.map(item => <Link key={item.slug} className="salud-card" to={`/enfermedades/${item.slug}`}><h3>{item.titulo}</h3><p>{item.descripcion}</p><span>Información y cuidados →</span></Link>)}
                     </div>
 
+                    <Link to="/enfermedades" className="cliente-button secondary" style={{ marginTop: 24 }}>Ver todas las enfermedades y necesidades</Link>
                     {/* ACLARACIÓN */}
                     <p
                         style={{

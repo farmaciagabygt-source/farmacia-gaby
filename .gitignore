@@ -78,3 +78,16 @@ backend/uploads/
 
 services/*/node_modules/
 services/*/.env
+# Credenciales y datos temporales de pruebas locales
+/services/pedidos/tests/.cierre-fixture.local.json
+
+# Configuración local, respaldos y credenciales de despliegue
+.env.*
+!.env.example
+!.env.*.example
+*.dump
+*.backup
+backups/
+.vercel/
+.railway/
+/services/docker/init/04-gaby-auth-datos.sql

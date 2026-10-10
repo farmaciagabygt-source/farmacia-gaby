@@ -8,7 +8,8 @@
     "prisma:validate": "prisma validate",
     "prisma:generate": "prisma generate",
     "migrate:dev": "prisma migrate dev",
-    "migrate:deploy": "prisma migrate deploy"
+    "migrate:deploy": "prisma migrate deploy",
+    "deploy:prepare": "node scripts/predeploy.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.8.0",

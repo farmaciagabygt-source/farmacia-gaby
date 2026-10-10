@@ -1,5 +1,14 @@
+import DevolucionesAdmin from '../pages/pedidos/DevolucionesAdmin';
+import PedidosAdmin from '../pages/pedidos/PedidosAdmin';
+import PedidoAdmin from '../pages/pedidos/PedidoAdmin';
+import PagosAdmin from '../pages/pagos/PagosAdmin';
+import FarmaciaAdmin from '../pages/sucursales/FarmaciaAdmin';
 import { Routes, Route, Navigate } from "react-router-dom";
 
+import MisPedidos from '../pages/pedidos/MisPedidos';
+import DetallePedido from '../pages/pedidos/DetallePedido';
+import Checkout from "../pages/carrito/Checkout";
+import Carrito from "../pages/carrito/Carrito";
 import Home from "../pages/home/Home";
 import Productos from "../pages/productos/Productos";
 import Categorias from "../pages/categorias/Categorias";
@@ -34,18 +43,28 @@ const AppRoutes = () => {
 
   return (
     <Routes>
+<Route path="/admin/devoluciones" element={<ProtectedRoute rolesPermitidos={["ADMINISTRADOR","CAJERO","DESPACHO"]}><DevolucionesAdmin/></ProtectedRoute>}/>
+<Route path="/admin/pedidos" element={<ProtectedRoute rolesPermitidos={["ADMINISTRADOR","CAJERO","DESPACHO"]}><PedidosAdmin/></ProtectedRoute>}/>
+<Route path="/admin/pedidos/:id" element={<ProtectedRoute rolesPermitidos={["ADMINISTRADOR","CAJERO","DESPACHO"]}><PedidoAdmin/></ProtectedRoute>}/>
+<Route path="/admin/pagos" element={<ProtectedRoute rolesPermitidos={["ADMINISTRADOR","CAJERO"]}><PagosAdmin/></ProtectedRoute>}/>
+<Route path="/admin/sucursales" element={<ProtectedRoute rolesPermitidos={["ADMINISTRADOR"]}><FarmaciaAdmin/></ProtectedRoute>}/>
       {/* HOME */}
       <Route
         path="/"
         element={
-          usuario?.roles?.includes("ADMINISTRADOR")
-            ? <Navigate to="/dashboard" replace />
+          usuario?.roles?.some(r=>["ADMINISTRADOR","CAJERO","DESPACHO","INVENTARIO"].includes(r))
+            ? <Navigate to={usuario.roles.includes("ADMINISTRADOR")?"/dashboard":usuario.roles.includes("INVENTARIO")?"/admin/inventario":"/admin/pedidos"} replace />
             : <Home />
         }
       />
 
       {/* PRODUCTOS */}
       <Route path="/productos" element={<Productos />} />
+      <Route path="/carrito" element={<Carrito />} />
+      <Route path="/checkout" element={<Checkout />} />
+      <Route path="/mis-pedidos" element={<MisPedidos />} />
+      <Route path="/mis-pedidos/:id" element={<DetallePedido />} />
+      <Route path="/pedido/:id" element={<DetallePedido />} />
 
       {/* CATEGORIAS */}
       <Route path="/categorias" element={<Categorias />} />
@@ -142,7 +161,7 @@ const AppRoutes = () => {
       <Route
         path="/admin/inventario"
         element={
-          <ProtectedRoute rolesPermitidos={["ADMINISTRADOR"]}>
+          <ProtectedRoute rolesPermitidos={["ADMINISTRADOR","INVENTARIO"]}>
             <InventarioAdmin />
           </ProtectedRoute>
         }
@@ -152,7 +171,7 @@ const AppRoutes = () => {
       <Route
         path="/usuarios"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute rolesPermitidos={["ADMINISTRADOR"]}>
             <Usuarios />
           </ProtectedRoute>
         }
@@ -161,7 +180,7 @@ const AppRoutes = () => {
       <Route
         path="/usuarios/crear"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute rolesPermitidos={["ADMINISTRADOR"]}>
             <UsuarioForm />
           </ProtectedRoute>
         }
@@ -170,7 +189,7 @@ const AppRoutes = () => {
       <Route
         path="/usuarios/editar/:id"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute rolesPermitidos={["ADMINISTRADOR"]}>
             <UsuarioForm />
           </ProtectedRoute>
         }
@@ -179,7 +198,7 @@ const AppRoutes = () => {
       <Route
         path="/usuarios/ver/:id"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute rolesPermitidos={["ADMINISTRADOR"]}>
             <UsuarioDetalle />
           </ProtectedRoute>
         }
@@ -189,7 +208,7 @@ const AppRoutes = () => {
       <Route
         path="/bitacora"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute rolesPermitidos={["ADMINISTRADOR"]}>
             <Bitacora />
           </ProtectedRoute>
         }

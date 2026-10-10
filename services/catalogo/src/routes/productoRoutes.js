@@ -2,6 +2,7 @@ import express from "express";
 
 import {
     listarProductosPublicos,
+    listarPromocionesPublicas,
     listarProductosAdmin,
     obtenerProductoAdmin,
     crearProducto,
@@ -12,6 +13,7 @@ import {
 import {
     verificarToken,
     soloAdministrador,
+    leerCatalogo,
 } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
@@ -24,14 +26,14 @@ const router = express.Router();
 router.get(
     "/admin",
     verificarToken,
-    soloAdministrador,
+    leerCatalogo,
     listarProductosAdmin
 );
 
 router.get(
     "/admin/:id",
     verificarToken,
-    soloAdministrador,
+    leerCatalogo,
     obtenerProductoAdmin
 );
 
@@ -62,9 +64,13 @@ router.patch(
 // ======================================================
 
 router.get(
+    "/promociones",
+    listarPromocionesPublicas
+);
+
+router.get(
     "/",
     listarProductosPublicos
 );
-
 
 export default router;

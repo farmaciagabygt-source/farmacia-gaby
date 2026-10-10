@@ -1,3 +1,4 @@
+import {validarPrecio} from '../middlewares/validarPrecio.js';
 import express from "express";
 
 import {
@@ -26,7 +27,7 @@ router.get(
 
 router.get(
     "/:id",
-    listarPreciosPresentacion
+    obtenerPrecio
 );
 
 
@@ -38,6 +39,7 @@ router.post(
     "/",
     verificarToken,
     soloAdministrador,
+    validarPrecio,
     crearPrecio
 );
 
@@ -45,6 +47,7 @@ router.put(
     "/:id",
     verificarToken,
     soloAdministrador,
+    validarPrecio,
     modificarPrecio
 );
 

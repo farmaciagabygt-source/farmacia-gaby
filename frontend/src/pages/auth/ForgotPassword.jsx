@@ -1,3 +1,4 @@
+import {SERVICIOS} from '../../api/urls';
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -19,7 +20,7 @@ export default function ForgotPassword() {
 
         try {
             const res = await axios.post(
-                "http://localhost:3001/api/auth/recuperar-password",
+                (SERVICIOS.auth + "/recuperar-password"),
                 {
                     correo,
                 }

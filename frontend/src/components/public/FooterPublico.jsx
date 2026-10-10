@@ -143,7 +143,7 @@ const FooterPublico = () => {
                         >
                             WhatsApp:
                             <br />
-                            Pendiente de confirmar
+                            Actualmente no disponible
                         </p>
 
                         <p
@@ -156,7 +156,7 @@ const FooterPublico = () => {
                         >
                             Correo:
                             <br />
-                            Pendiente de confirmar
+                            <a href="mailto:farmacia.gaby.gt@gmail.com" style={{color:"inherit"}}>farmacia.gaby.gt@gmail.com</a>
                         </p>
                     </div>
 
@@ -203,11 +203,9 @@ const FooterPublico = () => {
                                 lineHeight: "1.7",
                             }}
                         >
-                            Lunes a viernes: Pendiente
+                            Lunes a sábado: 9:30 a. m. – 7:30 p. m.
                             <br />
-                            Sábado: Pendiente
-                            <br />
-                            Domingo: Pendiente
+                            Domingo: 9:30 a. m. – 5:00 p. m.
                         </p>
                     </div>
                 </div>

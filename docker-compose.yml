@@ -1,6 +1,12 @@
 services:
 
   postgres:
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
     image: postgres:16-alpine
     container_name: farmacia-gaby-postgres
     environment:
@@ -8,20 +14,33 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "127.0.0.1:${POSTGRES_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./services/docker/init:/docker-entrypoint-initdb.d
 
   redis:
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
     image: redis:7-alpine
     container_name: farmacia-gaby-redis
     ports:
-      - "${REDIS_PORT}:6379"
+      - "127.0.0.1:${REDIS_PORT}:6379"
     volumes:
       - redis_data:/data
 
   auth:
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:'+process.env.PORT+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     build:
       context: ./services/auth
     container_name: farmacia-gaby-auth
@@ -29,8 +48,12 @@ services:
       - "${AUTH_PORT}:3001"
     environment:
       PORT: 3001
+      NODE_ENV: "${NODE_ENV:-development}"
+      CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174}"
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/gaby_auth?schema=public"
       JWT_SECRET: "${JWT_SECRET}"
+      SERVICE_API_KEY: "${SERVICE_API_KEY}"
+      AUTH_URL: "http://auth:3001"
       JWT_EXPIRES_IN: "2h"
       EMAIL_USER: "${EMAIL_USER}"
       EMAIL_PASS: "${EMAIL_PASS}"
@@ -38,54 +61,101 @@ services:
       - postgres
 
   catalogo:
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:'+process.env.PORT+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     build:
       context: ./services/catalogo
     container_name: farmacia-gaby-catalogo
     ports:
       - "${CATALOGO_PORT}:3002"
     environment:
+      SERVICE_API_KEY: "${SERVICE_API_KEY}"
+      AUTH_URL: "http://auth:3001"
       PORT: 3002
+      NODE_ENV: "${NODE_ENV:-development}"
+      CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174}"
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/gaby_catalogo?schema=public"
       JWT_SECRET: "${JWT_SECRET}"
     depends_on:
       - postgres
 
   inventario:
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:'+process.env.PORT+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     build:
       context: ./services/inventario
     container_name: farmacia-gaby-inventario
     ports:
       - "${INVENTARIO_PORT}:3003"
     environment:
+      AUTH_URL: "http://auth:3001"
+      CATALOGO_URL: "http://catalogo:3002"
       PORT: 3003
+      NODE_ENV: "${NODE_ENV:-development}"
+      CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174}"
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/gaby_inventario?schema=public"
+      SERVICE_API_KEY: "${SERVICE_API_KEY}"
     depends_on:
       - postgres
 
   pedidos:
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:'+process.env.PORT+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     build:
       context: ./services/pedidos
     container_name: farmacia-gaby-pedidos
     ports:
       - "${PEDIDOS_PORT}:3004"
     environment:
+      AUTH_URL: "http://auth:3001"
       PORT: 3004
+      NODE_ENV: "${NODE_ENV:-development}"
+      CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174}"
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/gaby_pedidos?schema=public"
+      JWT_SECRET: "${JWT_SECRET}"
       INVENTARIO_URL: "http://inventario:3003"
+      SERVICE_API_KEY: "${SERVICE_API_KEY}"
       PAGOS_URL: "http://pagos:3005"
     depends_on:
       - postgres
       - inventario
 
   pagos:
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:'+process.env.PORT+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     build:
       context: ./services/pagos
     container_name: farmacia-gaby-pagos
     ports:
       - "${PAGOS_PORT}:3005"
     environment:
+      AUTH_URL: "http://auth:3001"
       PORT: 3005
+      NODE_ENV: "${NODE_ENV:-development}"
+      CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174}"
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/gaby_pagos?schema=public"
+      JWT_SECRET: "${JWT_SECRET}"
+      SERVICE_API_KEY: "${SERVICE_API_KEY}"
       PEDIDOS_URL: "http://pedidos:3004"
     depends_on:
       - postgres

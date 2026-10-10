@@ -55,6 +55,9 @@ export const crearReserva = async (req, res) => {
         }
 
         const reserva = await prisma.$transaction(async (tx) => {
+            await tx.$queryRaw`SELECT e.id_existencia FROM existencia e JOIN ubicacion_inventario u ON u.id_ubicacion_inventario = e.id_ubicacion WHERE u.id_sucursal = ${Number(id_sucursal)} ORDER BY e.id_existencia FOR UPDATE OF e`;
+            const repetida = await tx.reservaInventario.findUnique({ where: { clave_idempotencia }, include: { rel_reserva_detalle_id_reserva: true } });
+            if (repetida) return repetida;
             const nuevaReserva =
                 await tx.reservaInventario.create({
                     data: {
@@ -82,9 +85,11 @@ export const crearReserva = async (req, res) => {
                                 id_sucursal:
                                     Number(id_sucursal),
                                 activa: true,
+                                tipo:{in:["BODEGA","VENTA"]},
                             },
                             ref_id_lote: {
                                 estado: "DISPONIBLE",
+                                OR: [{ fecha_vencimiento: null }, { fecha_vencimiento: { gt: new Date() } }],
                             },
                         },
                         include: {

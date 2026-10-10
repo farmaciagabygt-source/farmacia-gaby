@@ -1,3 +1,4 @@
+import {SERVICIOS} from '../../api/urls';
 import {
     useEffect,
     useState,
@@ -23,7 +24,7 @@ import CategoriasProducto from "./components/CategoriasProducto";
 import PresentacionesProducto from "./components/PresentacionesProducto";
 import PreciosProducto from "./components/PreciosProducto";
 
-const API_CATALOGO = "http://localhost:3002";
+const API_CATALOGO = (SERVICIOS.catalogo);
 
 const ModificarProducto = () => {
     const navigate = useNavigate();

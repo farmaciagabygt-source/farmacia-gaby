@@ -9,8 +9,10 @@ export const confirmarPedido = async (
         `${PEDIDOS_URL}/pedidos/${id_pedido}/estado`,
         {
             method: "PATCH",
+            signal: AbortSignal.timeout(20000),
             headers: {
                 "Content-Type": "application/json",
+                "x-service-key": process.env.SERVICE_API_KEY || "",
             },
             body: JSON.stringify({
                 estado: "CONFIRMADO",
@@ -46,8 +48,10 @@ export const cancelarPedido = async (
         `${PEDIDOS_URL}/pedidos/${id_pedido}/estado`,
         {
             method: "PATCH",
+            signal: AbortSignal.timeout(20000),
             headers: {
                 "Content-Type": "application/json",
+                "x-service-key": process.env.SERVICE_API_KEY || "",
             },
             body: JSON.stringify({
                 estado: "CANCELADO",

@@ -598,3 +598,80 @@ export const cambiarEstadoProducto = async (req, res) => {
         });
     }
 };
+
+// ======================================================
+// PÚBLICO - PROMOCIONES VIGENTES
+// ======================================================
+
+export const listarPromocionesPublicas = async (req, res) => {
+    try {
+        const ahora = new Date();
+
+        const promociones = await prisma.promocion.findMany({
+            where: {
+                activa: true,
+                desde: { lte: ahora },
+                hasta: { gt: ahora },
+                canales: { has: "WEB" },
+
+                rel_promocion_producto_id_promocion: {
+                    some: {
+                        ref_id_producto: {
+                            estado: "PUBLICADO",
+                            visible_web: true,
+                        },
+                    },
+                },
+            },
+
+            select: {
+                id_promocion: true,
+                codigo: true,
+                nombre: true,
+                descripcion: true,
+                tipo: true,
+                valor: true,
+                desde: true,
+                hasta: true,
+                prioridad: true,
+                acumulable: true,
+                minimo_compra: true,
+                tope_descuento: true,
+
+                rel_promocion_producto_id_promocion: {
+                    where: {
+                        ref_id_producto: {
+                            estado: "PUBLICADO",
+                            visible_web: true,
+                        },
+                    },
+                    select: {
+                        id_producto: true,
+                    },
+                },
+
+                rel_promocion_sucursal_id_promocion: {
+                    select: {
+                        id_sucursal: true,
+                    },
+                },
+            },
+
+            orderBy: [
+                { prioridad: "desc" },
+                { id_promocion: "asc" },
+            ],
+        });
+
+        return res.status(200).json(promociones);
+    } catch (error) {
+        console.error(
+            "Error al listar promociones públicas:",
+            error
+        );
+
+        return res.status(500).json({
+            message: "Error al obtener las promociones",
+        });
+    }
+};

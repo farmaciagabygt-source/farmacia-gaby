@@ -6,8 +6,10 @@ export const crearPago = async (datosPago) => {
         `${PAGOS_URL}/pagos`,
         {
             method: "POST",
+            signal: AbortSignal.timeout(10000),
             headers: {
                 "Content-Type": "application/json",
+                "x-service-key": process.env.SERVICE_API_KEY || "",
             },
             body: JSON.stringify(datosPago),
         }
@@ -32,7 +34,8 @@ export const crearPago = async (datosPago) => {
 
 export const obtenerPagosPorPedido = async (id_pedido) => {
     const response = await fetch(
-        `${PAGOS_URL}/pagos/pedido/${id_pedido}`
+        `${PAGOS_URL}/pagos/pedido/${id_pedido}`,
+        { signal: AbortSignal.timeout(10000), headers: { "x-service-key": process.env.SERVICE_API_KEY || "" } }
     );
 
     const data = await response.json();
@@ -51,3 +54,6 @@ export const obtenerPagosPorPedido = async (id_pedido) => {
 
     return data;
 };
+export async function cancelarPagosPendientes(id) {
+ const r=await fetch(`${PAGOS_URL}/pagos/pedido/${id}/cancelar-pendientes`,{method:'PATCH',headers:{'x-service-key':process.env.SERVICE_API_KEY||''},signal:AbortSignal.timeout(10000)});const data=await r.json();if(!r.ok)throw Object.assign(new Error(data.message),{status:r.status,data});return data;
+}

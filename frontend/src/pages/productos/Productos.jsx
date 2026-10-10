@@ -1,4 +1,7 @@
+import {SERVICIOS} from '../../api/urls';
 import { useEffect, useMemo, useState } from "react";
+import { useCarrito } from "../../context/CarritoContext";
+import { productosParaVenta } from "../../api/carritoApi";
 import { useSearchParams } from "react-router-dom";
 
 import {
@@ -11,14 +14,13 @@ import HeaderPublico from "../../components/public/HeaderPublico";
 import FooterPublico from "../../components/public/FooterPublico";
 
 const Productos = () => {
+    const { agregar, ocupado, cargando: cargandoCarrito, sucursal, sucursales, cambiarSucursal, carrito, esPersonal } = useCarrito();
     const [searchParams, setSearchParams] = useSearchParams();
 
     const categoriaUrl = searchParams.get("categoria");
 
     const [busqueda, setBusqueda] = useState("");
-    const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(
-        categoriaUrl || "Todas"
-    );
+    const categoriaSeleccionada = categoriaUrl || "Todas";
     const [filtroReceta, setFiltroReceta] = useState("todos");
     const [orden, setOrden] = useState("nombre");
 
@@ -48,9 +50,9 @@ const Productos = () => {
                     respuestaCategorias,
                     respuestaExistencias,
                 ] = await Promise.all([
-                    fetch("http://localhost:3002/productos"),
-                    fetch("http://localhost:3002/catalogos/categorias"),
-                    fetch("http://localhost:3003/existencias/resumen"),
+                    fetch((SERVICIOS.catalogo + "/productos")),
+                    fetch((SERVICIOS.catalogo + "/catalogos/categorias")),
+                    fetch((SERVICIOS.inventario + "/existencias/resumen")),
                 ]);
 
                 if (!respuestaProductos.ok) {
@@ -122,125 +124,13 @@ const Productos = () => {
     // CONSTRUIR PRODUCTOS PARA CONSERVAR EL MISMO DISEÑO
     // ======================================================
 
-    const productos = useMemo(() => {
-        const resultado = [];
-
-        productosBackend.forEach((producto) => {
-            const presentaciones =
-                producto.rel_presentacion_producto_id_producto || [];
-
-            const categoriasProducto =
-                producto.rel_producto_categoria_id_producto || [];
-
-            const categoriaPrincipal =
-                categoriasProducto.find(
-                    (relacion) => relacion.principal === true
-                ) || categoriasProducto[0];
-
-            const nombreCategoria =
-                categoriaPrincipal?.ref_id_categoria?.nombre ||
-                "Sin categoría";
-
-            presentaciones.forEach((presentacion) => {
-                const precios =
-                    presentacion
-                        .rel_precio_presentacion_id_presentacion || [];
-
-                const ahora = new Date();
-
-                const preciosVigentes = precios.filter((precio) => {
-                    const desde = precio.desde
-                        ? new Date(precio.desde)
-                        : null;
-
-                    const hasta = precio.hasta
-                        ? new Date(precio.hasta)
-                        : null;
-
-                    const yaInicio =
-                        !desde || desde <= ahora;
-
-                    const noFinalizo =
-                        !hasta || hasta >= ahora;
-
-                    return yaInicio && noFinalizo;
-                });
-
-                const precioSeleccionado =
-                    preciosVigentes
-                        .sort(
-                            (a, b) =>
-                                new Date(b.desde || 0) -
-                                new Date(a.desde || 0)
-                        )[0] ||
-                    precios
-                        .sort(
-                            (a, b) =>
-                                new Date(b.desde || 0) -
-                                new Date(a.desde || 0)
-                        )[0];
-
-                const idPresentacion =
-                    presentacion.id_presentacion_producto;
-
-                const stockDisponible = existenciasBackend
-                    .filter(
-                        (existencia) =>
-                            Number(existencia.id_presentacion) ===
-                            Number(idPresentacion)
-                    )
-                    .reduce(
-                        (total, existencia) =>
-                            total +
-                            Number(
-                                existencia.cantidad_disponible || 0
-                            ),
-                        0
-                    );
-
-                resultado.push({
-                    id: idPresentacion,
-
-                    nombre:
-                        presentacion.nombre ||
-                        producto.nombre,
-
-                    precio: Number(
-                        precioSeleccionado?.importe || 0
-                    ),
-
-                    stock: stockDisponible,
-
-                    requiereReceta:
-                        producto.requiere_receta === true,
-
-                    categoria: nombreCategoria,
-
-                    idProducto: producto.id_producto,
-
-                    idPresentacion,
-
-                    sku: presentacion.sku || null,
-
-                    marca:
-                        producto.ref_id_marca?.nombre || null,
-
-                    laboratorio:
-                        producto.ref_id_laboratorio?.nombre ||
-                        null,
-                });
-            });
-        });
-
-        return resultado;
-    }, [productosBackend, existenciasBackend]);
+    const productos = useMemo(() => productosParaVenta(productosBackend, existenciasBackend, sucursal), [productosBackend, existenciasBackend, sucursal]);
 
     // ======================================================
     // SELECCIONAR CATEGORÍA
     // ======================================================
 
     const seleccionarCategoria = (categoria) => {
-        setCategoriaSeleccionada(categoria);
 
         if (categoria === "Todas") {
             searchParams.delete("categoria");
@@ -269,7 +159,7 @@ const Productos = () => {
         if (categoriaSeleccionada !== "Todas") {
             resultado = resultado.filter(
                 (producto) =>
-                    producto.categoria === categoriaSeleccionada
+                    producto.categorias.includes(categoriaSeleccionada)
             );
         }
 
@@ -329,6 +219,9 @@ const Productos = () => {
                     padding: "45px 35px 70px",
                 }}
             >
+                <div className="gaby-cart-catalog-controls"><label htmlFor="catalogo-sucursal">Sucursal de compra</label><select id="catalogo-sucursal" value={sucursal || ""} disabled={ocupado || cargandoCarrito || !!carrito?.items.length || esPersonal} onChange={e => cambiarSucursal(e.target.value)}><option value="" disabled>Selecciona una sucursal</option>{sucursales.map(s => <option key={s.id_sucursal} value={s.id_sucursal}>{s.nombre}</option>)}</select><span>Las existencias y precios corresponden a esta sucursal.</span><a href="/carrito">Ver carrito</a></div>
+                {cargando && <p role="status" style={{ marginBottom: 18 }}>Cargando productos y existencias…</p>}
+                {error && <div className="gaby-cart-message error" role="alert">{error} <button type="button" className="gaby-cart-text-button" onClick={() => window.location.reload()}>Reintentar</button></div>}
                 {/* ENCABEZADO */}
                 <div
                     style={{
@@ -692,9 +585,7 @@ const Productos = () => {
                                                         }}
                                                     >
                                                         Q
-                                                        {producto.precio.toFixed(
-                                                            2
-                                                        )}
+                                                        {producto.precio === null ? "Sin precio vigente" : producto.precio.toFixed(2)}
                                                     </strong>
 
                                                     <span
@@ -716,8 +607,9 @@ const Productos = () => {
 
                                                 <button
                                                     type="button"
+onClick={() => agregar(producto.idPresentacion)}
                                                     disabled={
-                                                        producto.stock <= 0
+                                                        producto.stock <= 0 || producto.precio === null || ocupado || cargandoCarrito || esPersonal || !sucursal
                                                     }
                                                     style={{
                                                         width: "100%",
@@ -762,7 +654,7 @@ const Productos = () => {
                                     color: "#64748b",
                                 }}
                             >
-                                No se encontraron productos con los filtros seleccionados.
+                                {cargando ? "Cargando catálogo…" : error ? "El catálogo no está disponible por el momento." : "No se encontraron productos con los filtros seleccionados."}
                             </div>
                         )}
                     </section>

@@ -1,3 +1,4 @@
+import {SERVICIOS} from '../../api/urls';
 import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -7,7 +8,7 @@ import {
     faPhone,
 } from "@fortawesome/free-solid-svg-icons";
 
-const API_URL = "http://localhost:3001/api/auth";
+const API_URL = (SERVICIOS.auth);
 
 const ModalActualizarInformacion = ({
     abierto,
