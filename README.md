@@ -4,7 +4,7 @@
 
 Plataforma web de comercio electrónico y gestión administrativa para Farmacia Gaby, desarrollada como proyecto del curso Seminario de Tecnologías de Información de la Universidad Mariano Gálvez de Guatemala.
 
-El sistema permitirá integrar en una misma plataforma los servicios orientados al cliente y los procesos internos de la farmacia.
+El sistema permite integrar en una misma plataforma los servicios orientados al cliente y los procesos internos de la farmacia, contribuyendo a su Transformación Digital.
 
 ## Tecnologías
 
@@ -15,6 +15,7 @@ El sistema permitirá integrar en una misma plataforma los servicios orientados 
 - PostgreSQL
 - Prisma ORM
 - JWT
+- Redis
 - Railway
 
 ### Frontend
@@ -25,11 +26,25 @@ El sistema permitirá integrar en una misma plataforma los servicios orientados 
 - Axios
 - Vercel
 
+### Infraestructura y DevOps
+
+- Docker
+- Docker Compose
+- Jenkins (CI/CD)
+- Git y GitHub
+
 ## Estructura del proyecto
 
-- `backend/` - API y lógica del servidor.
-- `frontend/` - Aplicación web.
+- `services/auth/` - Microservicio de autenticación.
+- `services/catalogo/` - Microservicio de catálogo de productos.
+- `services/inventario/` - Microservicio de inventario.
+- `services/pedidos/` - Microservicio de pedidos.
+- `services/pagos/` - Microservicio de pagos.
+- `services/docker/` - Configuración y scripts de infraestructura.
+- `frontend/` - Aplicación web React.
 - `docs/` - Documentación del proyecto.
+- `Dockerfile` - Construcción del contenedor unificado de producción.
+- `docker-compose.yml` - Orquestación de servicios en desarrollo local.
 
 ## Arquitectura del proyecto
 
@@ -37,11 +52,11 @@ El sistema utiliza una arquitectura basada en microservicios para separar las pr
 
 ### Microservicios
 
-- `services/auth/` - Microservicio de autenticación.
-- `services/catalogo/` - Microservicio relacionado con el catálogo de productos.
-- `services/inventario/` - Microservicio relacionado con el inventario.
-- `services/pedidos/` - Microservicio para la gestión de pedidos.
-- `services/pagos/` - Microservicio para la gestión de pagos.
+- **Auth:** autenticación, usuarios y control de acceso.
+- **Catálogo:** administración de productos, categorías, presentaciones y precios.
+- **Inventario:** control de existencias, sucursales y reservas.
+- **Pedidos:** gestión de carritos, pedidos, facturación y envíos.
+- **Pagos:** administración de pagos y reembolsos.
 
 ### Puertos de los microservicios
 
@@ -50,14 +65,19 @@ El sistema utiliza una arquitectura basada en microservicios para separar las pr
 - Inventario - Puerto 3003
 - Pedidos - Puerto 3004
 - Pagos - Puerto 3005
-- Frontend - Puerto 5173
+- Frontend - Puerto 5173 (desarrollo)
+- Proxy HTTP - Puerto 8080 (producción prevista)
 
 ### Infraestructura
 
-- PostgreSQL - Sistema de gestión de base de datos.
-- Redis - Servicio de almacenamiento en memoria.
-- Docker - Contenedorización de los servicios.
-- Docker Compose - Orquestación del entorno local.
+- **PostgreSQL:** sistema de gestión de base de datos, con cinco bases independientes para los microservicios.
+- **Redis:** servicio de almacenamiento en memoria.
+- **Docker:** contenedorización de los servicios.
+- **Docker Compose:** orquestación del entorno local.
+- **Railway:** plataforma prevista para alojar el backend, PostgreSQL y Redis.
+- **Vercel:** plataforma prevista para alojar el frontend.
+
+Para producción se está preparando un contenedor Docker unificado que ejecutará los cinco microservicios mediante un proxy HTTP, conservando su separación lógica y funcional.
 
 ## Instalación
 
@@ -68,12 +88,16 @@ git clone https://github.com/mlopezg71-stack/farmacia-gaby.git
 cd farmacia-gaby
 ```
 
+### Configurar el entorno
+
+Configurar el archivo `.env` con las variables necesarias para los microservicios, PostgreSQL y Redis.
+
 ### Backend
 
+Iniciar los microservicios y la infraestructura mediante Docker Compose:
+
 ```bash
-cd backend
-npm install
-npm run dev
+docker compose up -d --build
 ```
 
 ### Frontend
@@ -86,7 +110,7 @@ npm run dev
 
 ## Ejecución con Docker
 
-Para iniciar la infraestructura y los servicios:
+Para iniciar los servicios:
 
 ```bash
 docker compose up -d
@@ -106,15 +130,21 @@ docker compose down
 
 ## Variables de entorno
 
-El backend utiliza variables de entorno para la conexión a la base de datos y autenticación.
+El backend utiliza variables de entorno para las conexiones a bases de datos, autenticación y comunicación interna.
 
+```dotenv
 DATABASE_URL=tu_url_de_base_de_datos
 JWT_SECRET=tu_clave_secreta_jwt
-JWT_EXPIRES_IN=8h
+JWT_EXPIRES_IN=2h
+SERVICE_API_KEY=tu_clave_interna_de_servicio
+CORS_ORIGINS=http://localhost:5173
+```
 
-El frontend puede utilizar:
+Cada microservicio utiliza su propia conexión `DATABASE_URL`.
 
-VITE_API_URL=http://localhost:3000/api
+El frontend utiliza variables de entorno para configurar las direcciones de las API correspondientes.
+
+Las credenciales reales deben mantenerse fuera del repositorio.
 
 ## Funcionalidades implementadas
 
@@ -183,16 +213,16 @@ VITE_API_URL=http://localhost:3000/api
 
 ## Estado
 
-Proyecto en desarrollo.
+Proyecto en desarrollo, con funcionalidades implementadas y despliegue en producción en preparación mediante Docker, Railway y Vercel.
 
 ## Autores
 
 **Grupo No. 6**
 
-- Marcous Samir Andree Lopez Gonzalez        0900-18-13299
-- Daniel Alejandro Morales Arias             0900-22-3068
-- Diego Morales Arias                        0900-22-3088
-- Christian Alexander Sierra Elias           0900-22-1815
+- Marcous Samir Andree Lopez Gonzalez   — 0900-18-13299
+- Daniel Alejandro Morales Arias        — 0900-22-3068
+- Diego Morales Arias                   — 0900-22-3088
+- Christian Alexander Sierra Elias      — 0900-22-1815
 
 ## Universidad
 
