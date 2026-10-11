@@ -56,6 +56,14 @@ export const solicitarRecuperacion = async (req, res) => {
 
         res.status(200).json(resultado);
     } catch (error) {
+        console.error("Error al solicitar recuperación:", {
+            message: error.message,
+            code: error.code,
+            command: error.command,
+            syscall: error.syscall,
+            stack: error.stack,
+        });
+
         res.status(400).json({
             message: error.message,
         });
