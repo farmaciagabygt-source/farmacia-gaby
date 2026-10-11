@@ -8,27 +8,41 @@ export INVENTARIO_URL="http://127.0.0.1:3003"
 export PEDIDOS_URL="http://127.0.0.1:3004"
 export PAGOS_URL="http://127.0.0.1:3005"
 
-# Iniciar los cinco microservicios de GabyFarma.
+# Asignar una base de datos independiente a cada microservicio.
+# Se conserva el servidor, usuario y contraseña de Railway.
+database_url_for() {
+  node -e '
+    const url = new URL(process.env.DATABASE_URL);
+    url.pathname = "/" + process.argv[1];
+    console.log(url.toString());
+  ' "$1"
+}
+
+AUTH_DB_URL=$(database_url_for gaby_auth)
+CATALOGO_DB_URL=$(database_url_for gaby_catalogo)
+INVENTARIO_DB_URL=$(database_url_for gaby_inventario)
+PEDIDOS_DB_URL=$(database_url_for gaby_pedidos)
+PAGOS_DB_URL=$(database_url_for gaby_pagos)
 # Cada servicio conserva su propio directorio y puerto.
 
 cd /app/services/auth
-PORT=3001 npm start &
+DATABASE_URL="$AUTH_DB_URL" PORT=3001 npm start &
 AUTH_PID=$!
 
 cd /app/services/catalogo
-PORT=3002 npm start &
+DATABASE_URL="$CATALOGO_DB_URL" PORT=3002 npm start &
 CATALOGO_PID=$!
 
 cd /app/services/inventario
-PORT=3003 npm start &
+DATABASE_URL="$INVENTARIO_DB_URL" PORT=3003 npm start &
 INVENTARIO_PID=$!
 
 cd /app/services/pedidos
-PORT=3004 npm start &
+DATABASE_URL="$PEDIDOS_DB_URL" PORT=3004 npm start &
 PEDIDOS_PID=$!
 
 cd /app/services/pagos
-PORT=3005 npm start &
+DATABASE_URL="$PAGOS_DB_URL" PORT=3005 npm start &
 PAGOS_PID=$!
 
 # Detener todos los procesos cuando se cierre el contenedor.
